@@ -4,6 +4,8 @@ public class Program
 {
     public static int Main()
     {
+        var range = GetRange();
+
         int[] invalidArr1 = null!;
         var invalidArr2 = Array.Empty<int>();
         var validArr1 = new int[1] { 1 };
@@ -40,10 +42,12 @@ public class Program
         return 0;
     }
 
-    public static void Main2()
+    internal static Range<int> GetRange()
     {
-        var val = new Value<DateOnlyValue>(new DateOnlyValue(new DateOnly(2022, 1, 1)));
-
-        var start = Value.Create<DateOnlyValue>(new DateOnly(2022, 1, 1)));
+        return
+            new Range<int>(
+                0, 
+                20, 
+                x => x + (x % 2 == 0 ? 1 : x + 2));
     }
 }
