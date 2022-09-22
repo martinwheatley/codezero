@@ -13,7 +13,7 @@ public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
     /// <param name="from">The lower inclusive endpoint.</param>
     /// <param name="to">The upper inclusive endpoint.</param>
     /// <exception cref="ArgumentException"></exception>
-    public BoundedInterval(T from, T to)
+    public BoundedInterval(Bound<T> from, Bound<T> to)
     {
         if (to < from)
             throw new ArgumentException($"Invalid interval: {nameof(to)} ({to}) must be greater than or equal to {nameof(from)} ({from}).", nameof(to));
@@ -22,10 +22,17 @@ public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
         To = to;
     }
 
+    public bool IsEmpty => 
+        From.Value.Equals(To.Value) && 
+        !(To.IsIncluded && From.IsIncluded);
+
     /// <summary>
     /// Determines whether the <see cref="BoundedInterval{T}"/> contains exactly one element; i.e. <see cref="From"/> == <see cref="To"/>.
     /// </summary>
-    public bool IsSingeton => From.Equals(To);
+    public bool IsSingeton => 
+        From.Value.Equals(To.Value) && 
+        From.IsIncluded && 
+        To.IsIncluded;
 
     /// <summary>
     /// Determines whether both <see cref="From"/> and <see cref="To"/> are default.
@@ -35,30 +42,37 @@ public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
     /// <summary>
     /// The inclusive lower endpoint.
     /// </summary>
-    public T From { get; }
+    public Bound<T> From { get; }
 
     /// <summary>
     /// The inclusive upper endpoint.
     /// </summary>
-    public T To { get; }
+    public Bound<T> To { get; }
 
     /// <summary>
     /// Determines whether <paramref name="item"/> is contained within the bounds of the current <see cref="BoundedInterval{T}"/>.
     /// </summary>
     /// <param name="item">The element that might or might not be contained in the <see cref="BoundedInterval{T}"/>.</param>
     /// <returns><see langword="true"/> if the <paramref name="item"/> is included in the current <see cref="BoundedInterval{T}"/>; otherwise <see langword="false"/>.</returns>
-    public bool Contains(T item) =>
-        item >= From &&
-        item <= To;
-
+    public bool Contains(T item)
+    {
+        var point = new Bound<T>(item, true);
+        
+        return point >= From && point <= To;
+    }
+    
     /// <summary>
     /// Determines whether <paramref name="other"/> is a sub-interval of the current <see cref="BoundedInterval{T}"/>.
     /// </summary>
     /// <param name="other">The other <see cref="BoundedInterval{T}"/> that might or might not be contained in the current <see cref="BoundedInterval{T}"/>.</param>
     /// <returns><see langword="true"/> if the <paramref name="other"/> is a sub-interval of the current <see cref="BoundedInterval{T}"/>; otherwise <see langword="false"/>.</returns>
-    public bool Contains(BoundedInterval<T> other) =>
-        Contains(other.From) &&
-        Contains(other.To);
+    public bool Contains(BoundedInterval<T> other)
+    {
+        var containsLower = other.From >= From;
+        var containsUpper = other.To <= To;
+
+        return containsLower && containsUpper;
+    }
 
     /// <summary>
     /// Determines whether <paramref name="other"/> overlaps the current <see cref="BoundedInterval{T}"/>.
@@ -125,10 +139,18 @@ public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
         HashCode.Combine(From, To);
 
     /// <inheritdoc/>>
-    public override string ToString() =>
-        IsSingeton
-            ? $"{{{From}}}"
-            : $"[{From}..{To}]";
+    public override string ToString()
+    {
+        var leftBracket = From.IsIncluded ? "[" : "(";
+        var rightBracket = To.IsIncluded ? "]" : ")";
+        var singletonValue = IsSingeton && From.IsIncluded ? From.Value : To.Value;
+
+        return IsEmpty 
+            ? $"ø"
+            : IsSingeton
+                ? $"{{{singletonValue}}}"
+                : $"{leftBracket}{From}..{To}{rightBracket}";
+    }
 
     private static T Max(T x1, T x2) =>
         x1 > x2 ? x1 : x2;
