@@ -4,8 +4,6 @@ public class Program
 {
     public static int Main()
     {
-        var range = GetRange();
-
         int[] invalidArr1 = null!;
         var invalidArr2 = Array.Empty<int>();
         var validArr1 = new int[1] { 1 };
@@ -21,7 +19,7 @@ public class Program
 
         foreach (var item in nonEmptyValid1)
         {
-            _ = item.Equals(nonEmptyValid1.First);
+            _ = item.Equals(nonEmptyValid1.Head);
         }
 
         var d = 5.3m;
@@ -40,14 +38,5 @@ public class Program
         Console.WriteLine(id.Equals(d));
 
         return 0;
-    }
-
-    internal static Range<int> GetRange()
-    {
-        return
-            new Range<int>(
-                0, 
-                20, 
-                x => x + (x % 2 == 0 ? 1 : x + 2));
     }
 }
