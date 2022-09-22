@@ -142,3 +142,41 @@ public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
     public static bool operator !=(BoundedInterval<T> left, BoundedInterval<T> right) =>
         !(left == right);
 }
+
+internal interface IBoundedInterval<T>
+    where T : struct, IComparable<T>, IEquatable<T>, IComparisonOperators<T, T>, IEqualityOperators<T, T>
+{
+    T From { get; }
+    T To { get; }
+    
+    public bool Contains(T item) =>
+        item >= From &&
+        item <= To;
+
+    public bool Overlaps(BoundedInterval<T> other) =>
+        Contains(other.From) ||
+        Contains(other.To) ||
+        other.Contains(From) ||
+        other.Contains(To);
+
+    public bool TryMerge(BoundedInterval<T> other, out BoundedInterval<T> result)
+    {
+        result = default;
+
+        if (!Overlaps(other))
+            return false;
+
+        var from = Min(From, other.From);
+        var to = Max(To, other.To);
+
+        result = new(from, to);
+
+        return true;
+    }
+
+    private static T Max(T x1, T x2) =>
+        x1 > x2 ? x1 : x2;
+
+    private static T Min(T x1, T x2) =>
+        x1 < x2 ? x1 : x2;
+}
