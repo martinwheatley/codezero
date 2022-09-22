@@ -15,7 +15,8 @@ public class BoundedIntervalTests
         def.ShouldBe(interval);
         interval.To.ShouldBe(default);
         interval.From.ShouldBe(default);
-        interval.IsDefault.ShouldBe(true);
+        interval.IsDefault.ShouldBeTrue();
+        interval.IsSingeton.ShouldBeTrue();
     }
 
     [Fact]
@@ -28,7 +29,8 @@ public class BoundedIntervalTests
 
         interval.To.ShouldBe(to);
         interval.From.ShouldBe(from);
-        interval.IsDefault.ShouldBe(false);
+        interval.IsDefault.ShouldBeFalse();
+        interval.IsSingeton.ShouldBeFalse();
     }
 
     [Fact]
@@ -40,7 +42,8 @@ public class BoundedIntervalTests
 
         interval.To.ShouldBe(from);
         interval.From.ShouldBe(from);
-        interval.IsDefault.ShouldBe(false);
+        interval.IsDefault.ShouldBeFalse();
+        interval.IsSingeton.ShouldBeTrue();
     }
 
     [Fact]
@@ -92,10 +95,29 @@ public class BoundedIntervalTests
     [InlineData(12, 15, false)]
     public void Test_BoundedInterval_Contains_OtherInterval(byte from, byte to, bool expContains)
     {
-        var i = new BoundedInterval<byte>(0, 5);
+        var i1 = new BoundedInterval<byte>(0, 5);
         var i2 = new BoundedInterval<byte>(from, to);
-        var contained = i.Contains(i2);
+        var contained = i1.Contains(i2);
 
         contained.ShouldBe(expContains);
+    }
+
+    [Theory]
+    [InlineData('a', 'b', false, default(char), default(char))]
+    [InlineData('a', 'f', true, 'a', 'm')]
+    [InlineData('a', 'z', true, 'a', 'z')]
+    [InlineData('f', 'h', true, 'e', 'm')]
+    [InlineData('k', 'z', true, 'e', 'z')]
+    [InlineData('s', 'z', false, default(char), default(char))]
+    public void Test_BoundedInterval_TryMerge_Other(char c1, char c2, bool expMergeSuccess, char expLower, char expUpper)
+    {
+        var i1 = new BoundedInterval<char>('e', 'm');
+        var i2 = new BoundedInterval<char>(c1, c2);
+
+        var canMerge = i1.TryMerge(i2, out var result);
+
+        canMerge.ShouldBe(expMergeSuccess);
+        result.From.ShouldBe(expLower);
+        result.To.ShouldBe(expUpper);
     }
 }
