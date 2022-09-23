@@ -2,7 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace category_theory;
 
-public readonly struct Bound<T> : IEquatable<Bound<T>>, IComparable<Bound<T>>
+public readonly struct Bound<T> : IEquatable<Bound<T>>, IComparable<Bound<T>>, IComparisonOperators<Bound<T>, Bound<T>>, IEqualityOperators<Bound<T>, Bound<T>>
     where T : struct, IComparable<T>, IEquatable<T>, IComparisonOperators<T, T>, IEqualityOperators<T, T>
 {
     public Bound(T value, bool isIncluded)
@@ -17,21 +17,25 @@ public readonly struct Bound<T> : IEquatable<Bound<T>>, IComparable<Bound<T>>
     public int CompareTo(Bound<T> other)
     {
         if (Equals(other))
-                return 0;
+            return 0;
 
         if (Value.Equals(other.Value))
         {
-            if (IsIncluded && !other.IsIncluded)
-                return 1;
-            
-            return -1;
+            return IsIncluded && !other.IsIncluded
+                ? 1
+                : -1;
         }
 
         return Value.CompareTo(other.Value);
     }
 
-    public bool Equals(Bound<T> other) => 
-        Value == other.Value && 
+    public int CompareTo(object? obj) =>
+        obj is not null and Bound<T> bound
+            ? CompareTo(bound)
+            : -1;
+
+    public bool Equals(Bound<T> other) =>
+        Value == other.Value &&
         IsIncluded == other.IsIncluded;
 
     public override bool Equals([NotNullWhen(true)] object? obj) =>
@@ -39,8 +43,18 @@ public readonly struct Bound<T> : IEquatable<Bound<T>>, IComparable<Bound<T>>
         obj is Bound<T> bound &&
         Equals(bound);
 
-    public override int GetHashCode() => 
+    public override int GetHashCode() =>
         HashCode.Combine(Value, IsIncluded);
 
     public override string? ToString() => $"{Value}";
+
+    public static Bound<T> Inclusive(T value) => new(value, true);
+    public static Bound<T> Exclusive(T value) => new(value, false);
+
+    public static bool operator ==(Bound<T> left, Bound<T> right) => left.Equals(right);
+    public static bool operator !=(Bound<T> left, Bound<T> right) => !(left == right);
+    public static bool operator <(Bound<T> left, Bound<T> right) => left.CompareTo(right) < 0;
+    public static bool operator >(Bound<T> left, Bound<T> right) => right.CompareTo(left) < 0;
+    public static bool operator <=(Bound<T> left, Bound<T> right) => left == right || left < right;
+    public static bool operator >=(Bound<T> left, Bound<T> right) => left == right || left > right;
 }

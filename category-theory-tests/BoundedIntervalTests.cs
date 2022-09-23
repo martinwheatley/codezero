@@ -7,7 +7,7 @@ namespace category_theory_tests;
 public class BoundedIntervalTests
 {
     [Fact]
-    public void Test_BoundedInterval_DefaultCtor()
+    public void Test_BoundedInterval_Default()
     {
         BoundedInterval<int> def = default;
         var interval = new BoundedInterval<int>();
@@ -16,19 +16,95 @@ public class BoundedIntervalTests
         interval.To.ShouldBe(default);
         interval.From.ShouldBe(default);
         interval.IsDefault.ShouldBeTrue();
-        interval.IsSingeton.ShouldBeTrue();
+        interval.IsSingeton.ShouldBeFalse();
+        interval.IsEmpty.ShouldBeTrue();
     }
 
     [Fact]
-    public void Test_BoundedInterval_Primary_Ctor()
+    public void Test_BoundedInterval_Exclusive_SameBound()
+    {
+        var bound = Bound<decimal>.Exclusive(2.03m);
+
+        var interval = new BoundedInterval<decimal>(bound, bound);
+        
+        interval.IsEmpty.ShouldBeTrue();
+        interval.IsDefault.ShouldBeFalse();
+        interval.IsSingeton.ShouldBeFalse();
+        interval.From.ShouldBe(bound);
+        interval.To.ShouldBe(bound);
+    }
+
+    [Fact]
+    public void Test_BoundedInterval_Exclusive_DifferetBounds()
+    {
+        var lower = Bound<decimal>.Exclusive(2.03m);
+        var upper = Bound<decimal>.Exclusive(2.04m);
+
+        var interval = new BoundedInterval<decimal>(lower, upper);
+
+        interval.IsEmpty.ShouldBeFalse();
+        interval.IsDefault.ShouldBeFalse();
+        interval.IsSingeton.ShouldBeFalse();
+        interval.From.ShouldBe(lower);
+        interval.To.ShouldBe(upper);
+    }
+
+    [Fact]
+    public void Test_BoundedInterval_LeftClosed_RightOpen_SameBound()
+    {
+        var lower = Bound<decimal>.Inclusive(2.03m);
+        var upper = Bound<decimal>.Exclusive(2.03m);
+
+        var interval = new BoundedInterval<decimal>(lower, upper);
+
+        interval.IsEmpty.ShouldBeTrue();
+        interval.IsDefault.ShouldBeFalse();
+        interval.IsSingeton.ShouldBeFalse();
+        interval.From.ShouldBe(lower);
+        interval.To.ShouldBe(upper);
+    }
+
+    [Fact]
+    public void Test_BoundedInterval_LeftOpen_RightClosed_SameBound()
+    {
+        var lower = Bound<decimal>.Exclusive(2.03m);
+        var upper = Bound<decimal>.Inclusive(2.03m);
+
+        var interval = new BoundedInterval<decimal>(lower, upper);
+
+        interval.IsEmpty.ShouldBeTrue();
+        interval.IsDefault.ShouldBeFalse();
+        interval.IsSingeton.ShouldBeFalse();
+        interval.From.ShouldBe(lower);
+        interval.To.ShouldBe(upper);
+    }
+
+    [Fact]
+    public void Test_BoundedInterval_LeftClosed_RightClosed_SameBound()
+    {
+        var lower = Bound<decimal>.Inclusive(2.03m);
+        var upper = Bound<decimal>.Inclusive(2.03m);
+
+        var interval = new BoundedInterval<decimal>(lower, upper);
+
+        interval.IsEmpty.ShouldBeFalse();
+        interval.IsDefault.ShouldBeFalse();
+        interval.IsSingeton.ShouldBeTrue();
+        interval.From.ShouldBe(lower);
+        interval.To.ShouldBe(upper);
+    }
+
+    [Fact]
+    public void Test_BoundedInterval_T_Ctor()
     {
         var from = new DateOnly(2020, 1, 1);
         var to = new DateOnly(2022, 1, 1);
 
         var interval = new BoundedInterval<DateOnly>(from, to);
 
-        interval.To.ShouldBe(to);
-        interval.From.ShouldBe(from);
+        interval.To.Value.ShouldBe(to);
+        interval.From.Value.ShouldBe(from);
+        interval.IsEmpty.ShouldBeFalse();
         interval.IsDefault.ShouldBeFalse();
         interval.IsSingeton.ShouldBeFalse();
     }
@@ -40,8 +116,9 @@ public class BoundedIntervalTests
 
         var interval = new BoundedInterval<TimeOnly>(from, from);
 
-        interval.To.ShouldBe(from);
-        interval.From.ShouldBe(from);
+        interval.To.Value.ShouldBe(from);
+        interval.From.Value.ShouldBe(from);
+        interval.IsEmpty.ShouldBeFalse();
         interval.IsDefault.ShouldBeFalse();
         interval.IsSingeton.ShouldBeTrue();
     }
@@ -117,7 +194,19 @@ public class BoundedIntervalTests
         var canMerge = i1.TryMerge(i2, out var result);
 
         canMerge.ShouldBe(expMergeSuccess);
-        result.From.ShouldBe(expLower);
-        result.To.ShouldBe(expUpper);
+        result.From.Value.ShouldBe(expLower);
+        result.To.Value.ShouldBe(expUpper);
+    }
+
+    [Fact]
+    public void Test_Contains()
+    {
+        // THIS SHOULD BE A SINGLETON!!!
+        var i = 1;
+        var lower = Bound<int>.Exclusive(1);
+        var upper = Bound<int>.Inclusive(2);
+        var interval = new BoundedInterval<int>(lower, upper);
+
+        var isContained = interval.Contains(i);
     }
 }
