@@ -46,7 +46,15 @@ public readonly struct Bound<T> : IEquatable<Bound<T>>, IComparable<Bound<T>>, I
     public override int GetHashCode() =>
         HashCode.Combine(Value, IsIncluded);
 
-    public override string? ToString() => $"{Value}";
+    public override string? ToString()
+    {
+        var brackets =
+            IsIncluded
+                ? ("[", "]")
+                : ("(", ")");
+
+        return $"{brackets.Item1}{Value}{brackets.Item2}";
+    }
 
     public static Bound<T> Inclusive(T value) => new(value, true);
     public static Bound<T> Exclusive(T value) => new(value, false);

@@ -1,7 +1,7 @@
 ﻿namespace category_theory;
 
 /// <summary>
-/// Represents an interval of <typeparamref name="T"/>s, where <typeparamref name="T"/> follows total order.
+/// Represents a proper bounded interval of type <typeparamref name="T"/>, where <typeparamref name="T"/> follows total order.
 /// </summary>
 /// <typeparam name="T">The type of elements in the interval.</typeparam>
 public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
@@ -10,8 +10,8 @@ public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
     /// <summary>
     /// Initializes a <see cref="BoundedInterval{T}"/> with endpoints <paramref name="from"/> and <paramref name="to"/>.
     /// </summary>
-    /// <param name="from">The lower bound which might or might not be included.</param>
-    /// <param name="to">The upper bound which might or might not be included.</param>
+    /// <param name="from">The lower <see cref="Bound{T}"/> of the interval, which might or might not be included.</param>
+    /// <param name="to">The upper <see cref="Bound{T}"/> of the interval, which might or might not be included.</param>
     /// <exception cref="ArgumentException"></exception>
     public BoundedInterval(Bound<T> from, Bound<T> to)
     {
@@ -25,14 +25,17 @@ public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
     /// <summary>
     /// Initializes a <see cref="BoundedInterval{T}"/> with inclusive endpoints <paramref name="from"/> and <paramref name="to"/>.
     /// </summary>
-    /// <param name="from">The lower inclusive bound.</param>
-    /// <param name="to">The upper inclusive bound.</param>
+    /// <param name="from">The lower inclusive <see cref="Bound{T}"/> of the interval.</param>
+    /// <param name="to">The upper inclusive <see cref="Bound{T}"/> of the interval.</param>
     /// <exception cref="ArgumentException"></exception>
     public BoundedInterval(T from, T to)
         : this(new Bound<T>(from, true), new Bound<T>(to, true))
     {
     }
 
+    /// <summary>
+    /// Determines whether the <see cref="BoundedInterval{T}"/> contains no elements; <see cref="From"/>.Value == <see cref="To"/>.Value, furthermore neither <see cref="From"/> or <see cref="To"/> is included.
+    /// </summary>
     public bool IsEmpty =>
         From.Value.Equals(To.Value) &&
         !(To.IsIncluded && From.IsIncluded);
@@ -51,12 +54,12 @@ public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
     public bool IsDefault => Equals(default);
 
     /// <summary>
-    /// The lowerbound endpoint.
+    /// The lower <see cref="Bound{T}"/> of the interval.
     /// </summary>
     public Bound<T> From { get; }
 
     /// <summary>
-    /// The upperbound endpoint.
+    /// The upper <see cref="Bound{T}"/> of the interval.
     /// </summary>
     public Bound<T> To { get; }
 
@@ -64,7 +67,7 @@ public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
     /// Determines whether <paramref name="item"/> is contained within the bounds of the current <see cref="BoundedInterval{T}"/>.
     /// </summary>
     /// <param name="item">The element that might or might not be contained in the <see cref="BoundedInterval{T}"/>.</param>
-    /// <returns><see langword="true"/> if the <paramref name="item"/> is included in the current <see cref="BoundedInterval{T}"/>; otherwise <see langword="false"/>.</returns>
+    /// <returns><see langword="true"/> if <paramref name="item"/> is included in the current <see cref="BoundedInterval{T}"/>; otherwise <see langword="false"/>.</returns>
     public bool Contains(T item)
     {
         return
@@ -81,7 +84,7 @@ public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
     /// Determines whether <paramref name="other"/> is a sub-interval of the current <see cref="BoundedInterval{T}"/>.
     /// </summary>
     /// <param name="other">The other <see cref="BoundedInterval{T}"/> that might or might not be contained in the current <see cref="BoundedInterval{T}"/>.</param>
-    /// <returns><see langword="true"/> if the <paramref name="other"/> is a sub-interval of the current <see cref="BoundedInterval{T}"/>; otherwise <see langword="false"/>.</returns>
+    /// <returns><see langword="true"/> if <paramref name="other"/> is a sub-interval of the current <see cref="BoundedInterval{T}"/>; otherwise <see langword="false"/>.</returns>
     public bool Contains(BoundedInterval<T> other)
     {
         var containsLower = other.From >= From;
@@ -94,48 +97,84 @@ public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
     /// Determines whether <paramref name="other"/> overlaps the current <see cref="BoundedInterval{T}"/>.
     /// </summary>
     /// <param name="other">The other <see cref="BoundedInterval{T}"/> that might or might not overlap the current <see cref="BoundedInterval{T}"/>.</param>
-    /// <returns><see langword="true"/> if the <paramref name="other"/> overlaps the current <see cref="BoundedInterval{T}"/>; otherwise <see langword="false"/>.</returns>
+    /// <returns><see langword="true"/> if <paramref name="other"/> overlaps the current <see cref="BoundedInterval{T}"/>; otherwise <see langword="false"/>.</returns>
     public bool Overlaps(BoundedInterval<T> other) =>
         Contains(other.From) ||
         Contains(other.To) ||
         other.Contains(From) ||
         other.Contains(To);
 
+    /// <summary>
+    /// Determines whether <paramref name="other"/> is adjacent on the current <see cref="BoundedInterval{T}"/> in either the beginning or the end of the interval.
+    /// </summary>
+    /// <param name="other">The other <see cref="BoundedInterval{T}"/> that might or might not be adjacent on the current <see cref="BoundedInterval{T}"/>.</param>
+    /// <returns><see langword="true"/> if <paramref name="other"/> is adjacent on the current <see cref="BoundedInterval{T}"/>; otherwise <see langword="false"/>.</returns>
+    public bool IsAdjacentOn(BoundedInterval<T> other)
+    {
+        var minUpper = Min(To, other.To);
+        var maxLower = Max(From, other.From);
+
+        return
+            minUpper.Value == maxLower.Value && 
+            minUpper.IsIncluded != maxLower.IsIncluded;
+    }
+
     private bool Contains(Bound<T> bound) =>
-        bound >= From && bound <= To;
+        bound >= From && 
+        bound <= To;
 
     /// <summary>
-    /// Merges an<paramref name="other"/> <see cref="BoundedInterval{T}"/> with the current <see cref="BoundedInterval{T}"/>. The return value indicates whether the merge succeeded.
+    /// Merges <paramref name="other"/> with the current <see cref="BoundedInterval{T}"/>. The return value indicates whether the merge succeeded.
     /// </summary>
-    /// <param name="other">The other <see cref="BoundedInterval{T}"/> to merge with the current <see cref="BoundedInterval{T}"/>.</param>
+    /// <param name="other">The <see cref="BoundedInterval{T}"/> to merge with the current <see cref="BoundedInterval{T}"/>.</param>
     /// <param name="result">
     /// When this method returns <see langword="true"/>, <paramref name="result"/> is a new <see cref="BoundedInterval{T}"/> with From = Min(<see langword="this"/>.From, <paramref name="other"/>.From) 
     /// and To = Max(<see langword="this"/>.To, <paramref name="other"/>.To).
     /// <para>
-    /// When this method returns <see langword="false"/>, the current <see cref="BoundedInterval{T}"/> and the <paramref name="other"/> <see cref="BoundedInterval{T}"/> don't overlap, and <paramref name="result"/> is <see langword="default"/>(<see cref="BoundedInterval{T}"/>).
+    /// When this method returns <see langword="false"/>, the current <see cref="BoundedInterval{T}"/> and the <paramref name="other"/> <see cref="BoundedInterval{T}"/> don't overlap, 
+    /// and <paramref name="result"/> is <see langword="default"/>(<see cref="BoundedInterval{T}"/>).
     /// </para>
     /// </param>
-    /// <returns><see langword="true"/> if the <paramref name="other"/> <see cref="BoundedInterval{T}"/> overlaps the current <see cref="BoundedInterval{T}"/>; otherwise <see langword="false"/>.</returns>
+    /// <returns><see langword="true"/> if <paramref name="other"/> overlaps the current <see cref="BoundedInterval{T}"/>; otherwise <see langword="false"/>.</returns>
     public bool TryMerge(BoundedInterval<T> other, out BoundedInterval<T> result)
     {
         result = default;
 
-        if (!Overlaps(other))
+        if (!(Overlaps(other) || IsAdjacentOn(other)))
             return false;
 
-        var from = Min(From, other.From);
-        var to = Max(To, other.To);
+        var minLower = Min(From, other.From);
+        var maxUpper = Max(To, other.To);
 
-        result = new(from, to);
+        result = new(minLower, maxUpper);
+
+        return true;
+    }
+
+    public bool TryPartition(T value, out BoundedInterval<T>[] result)
+    {
+        result = Array.Empty<BoundedInterval<T>>();
+
+        if (!Contains(value))
+            return false;
+
+        // Should probably return an OrderedCollection<BoundedInterval<T>>
+
+        result =
+            new BoundedInterval<T>[2]
+            {
+                new BoundedInterval<T>(From, new Bound<T>(value, false)),
+                new BoundedInterval<T>(new Bound<T>(value, true), To)
+            };
 
         return true;
     }
 
     /// <summary>
-    /// Determines whether the <paramref name="other"/> <see cref="BoundedInterval{T}"/> is equal to the current <see cref="BoundedInterval{T}"/>.
+    /// Determines whether <paramref name="other"/> <see cref="BoundedInterval{T}"/> is equal to the current <see cref="BoundedInterval{T}"/>.
     /// </summary>
-    /// <param name="other">The other <see cref="BoundedInterval{T}"/> that might or might not be equal to the current <see cref="BoundedInterval{T}"/>.</param>
-    /// <returns><see langword="true"/> if the <paramref name="other"/> <see cref="BoundedInterval{T}"/> equals the current <see cref="BoundedInterval{T}"/>; otherwise <see langword="false"/>.</returns>
+    /// <param name="other">The <see cref="BoundedInterval{T}"/> that might or might not be equal to the current <see cref="BoundedInterval{T}"/>.</param>
+    /// <returns><see langword="true"/> if <paramref name="other"/> <see cref="BoundedInterval{T}"/> equals the current <see cref="BoundedInterval{T}"/>; otherwise <see langword="false"/>.</returns>
     public bool Equals(BoundedInterval<T> other) =>
         From.Equals(other.From) &&
         To.Equals(other.To);
@@ -168,7 +207,7 @@ public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
             ? $"ø"
             : IsSingeton
                 ? $"{{{singletonValue}}}"
-                : $"{leftBracket}{From}..{To}{rightBracket}";
+                : $"{leftBracket}{From.Value}..{To.Value}{rightBracket}";
     }
 
     private static Bound<T> Max(Bound<T> x1, Bound<T> x2) =>
@@ -183,41 +222,3 @@ public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
     public static bool operator !=(BoundedInterval<T> left, BoundedInterval<T> right) =>
         !(left == right);
 }
-
-//internal interface IBoundedInterval<T>
-//    where T : struct, IComparable<T>, IEquatable<T>, IComparisonOperators<T, T>, IEqualityOperators<T, T>
-//{
-//    T From { get; }
-//    T To { get; }
-
-//    public bool Contains(T item) =>
-//        item >= From &&
-//        item <= To;
-
-//    public bool Overlaps(BoundedInterval<T> other) =>
-//        Contains(other.From) ||
-//        Contains(other.To) ||
-//        other.Contains(From) ||
-//        other.Contains(To);
-
-//    public bool TryMerge(BoundedInterval<T> other, out BoundedInterval<T> result)
-//    {
-//        result = default;
-
-//        if (!Overlaps(other))
-//            return false;
-
-//        var from = Min(From, other.From);
-//        var to = Max(To, other.To);
-
-//        result = new(from, to);
-
-//        return true;
-//    }
-
-//    private static T Max(T x1, T x2) =>
-//        x1 > x2 ? x1 : x2;
-
-//    private static T Min(T x1, T x2) =>
-//        x1 < x2 ? x1 : x2;
-//}

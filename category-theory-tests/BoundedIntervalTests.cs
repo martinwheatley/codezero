@@ -199,7 +199,7 @@ public class BoundedIntervalTests
     }
 
     [Fact]
-    public void Test_Contains()
+    public void Test_Contains_SingletonInterval()
     {
         // THIS SHOULD BE A SINGLETON!!!
         var i = 1;
@@ -207,6 +207,36 @@ public class BoundedIntervalTests
         var upper = Bound<int>.Inclusive(2);
         var interval = new BoundedInterval<int>(lower, upper);
 
-        var isContained = interval.Contains(i);
+        interval.Contains(i).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Test_Adjacency_FirstIntervalEndIsOpen()
+    {
+        var lb1 = new Bound<int>(1, true);
+        var ub1 = new Bound<int>(5, false);
+
+        var lb2 = new Bound<int>(5, true);
+        var ub2 = new Bound<int>(10, true);
+
+        var i1 = new BoundedInterval<int>(lb1, ub1);
+        var i2 = new BoundedInterval<int>(lb2, ub2);
+
+        i1.IsAdjacentOn(i2).ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Test_Adjacency_FirstIntervalEndIsClosed()
+    {
+        var lb1 = new Bound<int>(1, true);
+        var ub1 = new Bound<int>(5, true);
+
+        var lb2 = new Bound<int>(5, false);
+        var ub2 = new Bound<int>(10, true);
+
+        var i1 = new BoundedInterval<int>(lb1, ub1);
+        var i2 = new BoundedInterval<int>(lb2, ub2);
+
+        i1.IsAdjacentOn(i2).ShouldBeTrue();
     }
 }
