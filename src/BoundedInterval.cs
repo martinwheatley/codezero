@@ -1,11 +1,13 @@
-﻿namespace category_theory;
+﻿using System;
+
+namespace category_theory;
 
 /// <summary>
 /// Represents a proper bounded interval of type <typeparamref name="T"/>, where <typeparamref name="T"/> follows total order.
 /// </summary>
 /// <typeparam name="T">The type of elements in the interval.</typeparam>
 public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
-    where T : struct, IComparable<T>, IEquatable<T>, IComparisonOperators<T, T>, IEqualityOperators<T, T>
+    where T : struct, IComparable<T>, IEquatable<T>, IComparisonOperators<T, T>, IEqualityOperators<T, T>, IParseable<T>
 {
     /// <summary>
     /// Initializes a <see cref="BoundedInterval{T}"/> with endpoints <paramref name="from"/> and <paramref name="to"/>.
@@ -115,12 +117,12 @@ public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
         var maxLower = Max(From, other.From);
 
         return
-            minUpper.Value == maxLower.Value && 
+            minUpper.Value == maxLower.Value &&
             minUpper.IsIncluded != maxLower.IsIncluded;
     }
 
     private bool Contains(Bound<T> bound) =>
-        bound >= From && 
+        bound >= From &&
         bound <= To;
 
     /// <summary>
@@ -208,6 +210,58 @@ public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
             : IsSingeton
                 ? $"{{{singletonValue}}}"
                 : $"{leftBracket}{From.Value}..{To.Value}{rightBracket}";
+    }
+
+    public static bool TryParse(string s, out BoundedInterval<T> result) =>
+        TryParse(s.AsSpan(), null, out result);
+
+    public static bool TryParse(string s, IFormatProvider? provider, out BoundedInterval<T> result) =>
+        TryParse(s.AsSpan(), provider, out result);
+
+    public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out BoundedInterval<T> result)
+    {
+        result = default;
+
+        if (s.IsEmpty)
+            return false;
+
+        var firstIndexOfDotDot = s.IndexOf("..");
+        var lastIndexOfDotDot = s.LastIndexOf("..");
+
+        if (!(firstIndexOfDotDot == lastIndexOfDotDot))
+            return false;
+
+        if (!T.TryParse(s[1..firstIndexOfDotDot].ToString(), provider, out var from))
+            return false;
+
+        if (!T.TryParse(s[(firstIndexOfDotDot + 2)..^1].ToString(), provider, out var to))
+            return false;
+
+        bool? fromIncluded =
+            s[0] switch
+            {
+                '[' => true,
+                '(' => false,
+                _ => null
+            };
+
+        bool? toIncluded =
+            s[^1] switch
+            {
+                ']' => true,
+                ')' => false,
+                _ => null
+            };
+
+        if (fromIncluded is null || toIncluded is null)
+            return false;
+
+        var lowerBound = new Bound<T>(from, fromIncluded.Value);
+        var upperBound = new Bound<T>(to, toIncluded.Value);
+
+        result = new BoundedInterval<T>(lowerBound, upperBound);
+
+        return true;
     }
 
     private static Bound<T> Max(Bound<T> x1, Bound<T> x2) =>

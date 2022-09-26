@@ -239,4 +239,15 @@ public class BoundedIntervalTests
 
         i1.IsAdjacentOn(i2).ShouldBeTrue();
     }
+
+    [Fact]
+    public void Test_BoundedInterval_TryParse()
+    {
+        var s = "[2022-01-01..2023-01-01)";
+        var canParse = BoundedInterval<DateOnly>.TryParse(s, out var interval);
+
+        canParse.ShouldBeTrue();
+        interval.From.ShouldBe(new Bound<DateOnly>(new DateOnly(2022, 1, 1), true));
+        interval.To.ShouldBe(new Bound<DateOnly>(new DateOnly(2023, 1, 1), false));
+    }
 }
