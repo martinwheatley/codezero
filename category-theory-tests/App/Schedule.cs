@@ -73,16 +73,16 @@ internal class ActivityConfiguration
 internal class ResourceActivityConfiguration
 {
     private readonly ActivityConfiguration _reservedTimeSlots;
-    private readonly ActivityConfiguration _preferredTimeSlots;
+    private readonly ActivityConfiguration _prioritizedTimeSlots;
 
     public ResourceActivityConfiguration(
         Resource resource,
         ActivityConfiguration reservedTimeSlots,
-        ActivityConfiguration preferredTimeSlots)
+        ActivityConfiguration prioritizedTimeSlots)
     {
         Resource = resource;
         _reservedTimeSlots = reservedTimeSlots;
-        _preferredTimeSlots = preferredTimeSlots;
+        _prioritizedTimeSlots = prioritizedTimeSlots;
     }
 
     public Resource Resource { get; }
@@ -91,8 +91,8 @@ internal class ResourceActivityConfiguration
         activity.RequiredResources.Keys.Contains(Resource.Type) &&
         !_reservedTimeSlots.Contains(activity);
 
-    public bool Prefers(Activity activity) =>
-        _preferredTimeSlots.Contains(activity);
+    public bool IsPrioritized(Activity activity) =>
+        _prioritizedTimeSlots.Contains(activity);
 
     public override string ToString() => Resource.ToString();
 }
@@ -237,7 +237,7 @@ public class Application
         var result =
             activities.ToDictionary(
                 s => s,
-                s => resources.Where(e => e.IsAvailable(s)).Select(e => (e, e.Prefers(s))).ToArray());
+                s => resources.Where(e => e.IsAvailable(s)).Select(e => (e, e.IsPrioritized(s))).ToArray());
 
         // HARD CONTRAINTS:
         //  1) En resource må ikke påtage sig to aktiviteter lige efter hinanden.
