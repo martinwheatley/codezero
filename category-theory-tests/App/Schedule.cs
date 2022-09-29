@@ -12,98 +12,98 @@ internal class Schedule
 {
 }
 
-internal class Shift
+internal class Activity
 {
-    public Shift(EmployeeType[] requiredEmployeeTypes, BoundedInterval<DateTime> interval)
+    public Activity(IReadOnlyDictionary<ResourceType, int> requiredResources, BoundedInterval<DateTime> timeSlot)
     {
-        Interval = interval;
-        RequiredEmployeeTypes = requiredEmployeeTypes;
+        TimeSlot = timeSlot;
+        RequiredResources = requiredResources;
     }
 
-    public EmployeeType[] RequiredEmployeeTypes { get; }
-    public BoundedInterval<DateTime> Interval { get; }
+    public BoundedInterval<DateTime> TimeSlot { get; }
+    public IReadOnlyDictionary<ResourceType, int> RequiredResources { get; } // Lav en mere deklarativ type; ActivityRequirements e.l.
 
-    public override string ToString() => Interval.ToString();
+    public override string ToString() => TimeSlot.ToString();
 }
 
-internal enum EmployeeType
+internal enum ResourceType
 {
     T1,
     T2
 }
 
-internal record Employee
+internal record Resource
 {
-    public Employee(int id, string navn, EmployeeType type)
+    public Resource(int id, string name, ResourceType type)
     {
         Id = id;
-        Navn = navn;
+        Name = name;
         Type = type;
     }
 
-    public string Navn { get; }
     public int Id { get; }
-    public EmployeeType Type { get; }
+    public string Name { get; }
+    public ResourceType Type { get; }
 }
 
-internal class ShiftConfiguration
+internal class ActivityConfiguration
 {
-    private readonly BoundedInterval<DateTime>[] _intervals;
+    private readonly BoundedInterval<DateTime>[] _timeSlots;
     private readonly Func<BoundedInterval<DateTime>, bool>[] _predicates;
 
-    public static ShiftConfiguration Empty =>
+    public static ActivityConfiguration Empty =>
         new(Array.Empty<BoundedInterval<DateTime>>(),
             Array.Empty<Func<BoundedInterval<DateTime>, bool>>());
 
-    public ShiftConfiguration(BoundedInterval<DateTime>[] intervals, Func<BoundedInterval<DateTime>, bool>[] intervalPredicates)
+    public ActivityConfiguration(BoundedInterval<DateTime>[] timeSlots, Func<BoundedInterval<DateTime>, bool>[] timeSlotPredicates)
     {
-        _intervals = intervals;
-        _predicates = intervalPredicates;
+        _timeSlots = timeSlots;
+        _predicates = timeSlotPredicates;
     }
 
-    public bool Contains(Shift shift)
+    public bool Contains(Activity activity)
     {
-        var conflictsWithReservedDates = _intervals.Any(r => r.Overlaps(shift.Interval));
-        var conflictsWithReservedRules = _predicates.Any(f => f(shift.Interval));
+        var conflictsWithReservedDates = _timeSlots.Any(r => r.Overlaps(activity.TimeSlot));
+        var conflictsWithReservedRules = _predicates.Any(f => f(activity.TimeSlot));
 
         return conflictsWithReservedDates || conflictsWithReservedRules;
     }
 }
 
-internal class EmployeeShiftConfiguration
+internal class ResourceActivityConfiguration
 {
-    private readonly ShiftConfiguration _reservedIntervals;
-    private readonly ShiftConfiguration _preferredIntervals;
+    private readonly ActivityConfiguration _reservedTimeSlots;
+    private readonly ActivityConfiguration _preferredTimeSlots;
 
-    public EmployeeShiftConfiguration(
-        Employee employee,
-        ShiftConfiguration reservedIntervals,
-        ShiftConfiguration preferredIntervals)
+    public ResourceActivityConfiguration(
+        Resource resource,
+        ActivityConfiguration reservedTimeSlots,
+        ActivityConfiguration preferredTimeSlots)
     {
-        Employee = employee;
-        _reservedIntervals = reservedIntervals;
-        _preferredIntervals = preferredIntervals;
+        Resource = resource;
+        _reservedTimeSlots = reservedTimeSlots;
+        _preferredTimeSlots = preferredTimeSlots;
     }
 
-    public Employee Employee { get; }
+    public Resource Resource { get; }
 
-    public bool CanWork(Shift shift) =>
-        shift.RequiredEmployeeTypes.Contains(Employee.Type) &&
-        !_reservedIntervals.Contains(shift);
+    public bool IsAvailable(Activity activity) =>
+        activity.RequiredResources.Keys.Contains(Resource.Type) &&
+        !_reservedTimeSlots.Contains(activity);
 
-    public bool Prefers(Shift shift) =>
-        _preferredIntervals.Contains(shift);
+    public bool Prefers(Activity activity) =>
+        _preferredTimeSlots.Contains(activity);
 
-    public override string ToString() => Employee.ToString();
+    public override string ToString() => Resource.ToString();
 }
 
 public class Application
 {
-    private static EmployeeShiftConfiguration Hans
+    private static ResourceActivityConfiguration Hans
     {
         get
         {
-            var employee = new Employee(1, "Hans", EmployeeType.T1);
+            var resource = new Resource(1, "Hans", ResourceType.T1);
 
             var preferredPredicates =
                 new Func<BoundedInterval<DateTime>, bool>[1]
@@ -118,18 +118,18 @@ public class Application
                     i => i.From.Value.DayOfWeek is DayOfWeek.Thursday && TimeOnly.FromDateTime(i.To.Value).Hour is > 15,
                 };
 
-            var preferredShifts = new ShiftConfiguration(Array.Empty<BoundedInterval<DateTime>>(), preferredPredicates);
-            var reservedShifts = new ShiftConfiguration(Array.Empty<BoundedInterval<DateTime>>(), reservedPredicates);
+            var preferredActivities = new ActivityConfiguration(Array.Empty<BoundedInterval<DateTime>>(), preferredPredicates);
+            var reservedActivities = new ActivityConfiguration(Array.Empty<BoundedInterval<DateTime>>(), reservedPredicates);
 
-            return new EmployeeShiftConfiguration(employee, reservedShifts, preferredShifts);
+            return new ResourceActivityConfiguration(resource, reservedActivities, preferredActivities);
         }
     }
 
-    private static EmployeeShiftConfiguration Grethe
+    private static ResourceActivityConfiguration Grethe
     {
         get
         {
-            var employee = new Employee(2, "Grethe", EmployeeType.T2);
+            var resource = new Resource(2, "Grethe", ResourceType.T2);
 
             var dob = new DateOnly(2022, 1, 24);
 
@@ -147,17 +147,17 @@ public class Application
                         Bound<DateTime>.Exclusive(dob.AddDays(1).ToDateTime(default)))
                 };
 
-            var reservedShifts = new ShiftConfiguration(reservedForDob, reservedPredicates);
+            var reservedActivities = new ActivityConfiguration(reservedForDob, reservedPredicates);
 
-            return new EmployeeShiftConfiguration(employee, reservedShifts, ShiftConfiguration.Empty);
+            return new ResourceActivityConfiguration(resource, reservedActivities, ActivityConfiguration.Empty);
         }
     }
 
-    private static EmployeeShiftConfiguration HrAndersen
+    private static ResourceActivityConfiguration BroderGrimm
     {
         get
         {
-            var employee = new Employee(3, "Hr. Andersen", EmployeeType.T2);
+            var resource = new Resource(3, "Hr. Andersen", ResourceType.T2);
 
             var reservedPredicates =
                 new Func<BoundedInterval<DateTime>, bool>[1]
@@ -171,47 +171,34 @@ public class Application
                     i => i.From.Value.DayOfWeek is DayOfWeek.Tuesday
                 };
 
-            var preferredShifts =
-                new ShiftConfiguration(
+            var preferredActivities =
+                new ActivityConfiguration(
                     Array.Empty<BoundedInterval<DateTime>>(),
                     preferredPredicates);
 
-            var reservedShifts =
-                new ShiftConfiguration(
+            var reservedActivities =
+                new ActivityConfiguration(
                     Array.Empty<BoundedInterval<DateTime>>(),
                     reservedPredicates);
 
-            return new EmployeeShiftConfiguration(employee, reservedShifts, preferredShifts);
+            return new ResourceActivityConfiguration(resource, reservedActivities, preferredActivities);
         }
     }
 
     [Fact]
     public void Test()
     {
-        // Schedule:
-        //  Start:  2022-01-01 08:00
-        //  End:    2022-02-01 08:00
+        var scheduleStart = new DateOnly(2022, 1, 1);
+        var scheduleEnd = new DateOnly(2022, 2, 1);
 
-        var emp1 = new Employee(1, "Hans", EmployeeType.T2);
-        var emp2 = new Employee(2, "Grethe", EmployeeType.T1);
-
-        var scheduleStart = new DateTime(2022, 1, 1, 8, 0, 0);
-        var scheduleEnd = new DateTime(2022, 2, 1, 8, 0, 0);
-
-        var schedule =
-            new BoundedInterval<DateTime>(
-                Bound<DateTime>.Inclusive(scheduleStart),
-                Bound<DateTime>.Exclusive(scheduleEnd));
-
-        var shifts =
-            Enumerable.Range(0, scheduleEnd.DayOfYear - scheduleStart.DayOfYear)
+        var activities =
+            Enumerable.Range(0, scheduleEnd.DayNumber - scheduleStart.DayNumber - 1)
                 .Select(i =>
                 {
-                    var day = scheduleStart.AddDays(i);
-                    var isWeekend = day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
+                    var date = scheduleStart.AddDays(i);
+                    var isWeekend = date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
 
-                    var date = DateOnly.FromDateTime(day);
-                    var startTime = day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday
+                    var startTime = isWeekend
                         ? new TimeOnly(10, 0)
                         : new TimeOnly(8, 0);
 
@@ -222,30 +209,47 @@ public class Application
                             Bound<DateTime>.Inclusive(date.ToDateTime(startTime)),
                             Bound<DateTime>.Exclusive(date.ToDateTime(endTime)));
 
-                    var requiredEmplType =
+                    var requiredResources =
                         isWeekend
-                            ? new EmployeeType[1] { EmployeeType.T1 }
-                            : new EmployeeType[1] { EmployeeType.T2 };
+                            ? new Dictionary<ResourceType, int>
+                                {
+                                    { ResourceType.T1, 1 }
+                                }
+                            : new Dictionary<ResourceType, int>
+                                {
+                                    { ResourceType.T2, 1 }
+                                };
 
-                    var shift = new Shift(requiredEmplType, interval);
-
-                    return shift;
+                    return new Activity(requiredResources, interval);
                 })
                 .ToArray();
 
-        var employees =
-            new EmployeeShiftConfiguration[3]
+        var resources =
+            new ResourceActivityConfiguration[3]
             {
                 Hans,
                 Grethe,
-                HrAndersen
+                BroderGrimm
             };
 
         // Behov for at en employee skal være af en særlig type for at kunne dække en vagt.
         // Behov for en type, der holder nedenstående data, samt information om, hvilke vagter de enkelte employees er blevet tildelt.
         var result =
-            shifts.ToDictionary(
+            activities.ToDictionary(
                 s => s,
-                s => employees.Where(e => e.CanWork(s)).Select(e => (e, e.Prefers(s))).ToArray());
+                s => resources.Where(e => e.IsAvailable(s)).Select(e => (e, e.Prefers(s))).ToArray());
+
+        // HARD CONTRAINTS:
+        //  1) En resource må ikke påtage sig to aktiviteter lige efter hinanden.
+        //  2) En resource må ikke påtage sig aktiviteter på sine reserverede timeslots.
+        //  3) En resource må ikke skal have fri et døgn efter endt aktivitet, hvis aktiviteten varer minimum 12 timer.
+        //  4) Minimér antal aktiviteter uden resourcer.
+
+        // SOFT CONSTRAINTS:
+        //  1) Minimér antal overarbejdstimer i perioden.
+        //  2) En resource skal arbejde minimum X timer i perioden.
+
+        // var scheduler = new Scheduler(algorithm);
+        // var schedule = scheduler.Map(activities, resources);
     }
 }
