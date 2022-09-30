@@ -111,15 +111,26 @@ public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
     /// </summary>
     /// <param name="other">The other <see cref="BoundedInterval{T}"/> that might or might not be adjacent on the current <see cref="BoundedInterval{T}"/>.</param>
     /// <returns><see langword="true"/> if <paramref name="other"/> is adjacent on the current <see cref="BoundedInterval{T}"/>; otherwise <see langword="false"/>.</returns>
-    public bool IsAdjacentOn(BoundedInterval<T> other)
-    {
-        var minUpper = Min(To, other.To);
-        var maxLower = Max(From, other.From);
+    public bool IsAdjacentOn(BoundedInterval<T> other) => 
+        other.Precedes(this) || 
+        other.Follows(this);
 
-        return
-            minUpper.Value == maxLower.Value &&
-            minUpper.IsIncluded != maxLower.IsIncluded;
-    }
+    /// <summary>
+    /// Determines whether the current <see cref="BoundedInterval{T}"/> exactly precedes <paramref name="other"/>.
+    /// </summary>
+    /// <param name="other">The other <see cref="BoundedInterval{T}"/> that might or might not be preceded by the current <see cref="BoundedInterval{T}"/>.</param>
+    /// <returns><see langword="true"/> if the current <see cref="BoundedInterval{T}"/> exactly precedes <paramref name="other"/>; otherwise <see langword="false"/>.</returns>
+    public bool Precedes(BoundedInterval<T> other) =>
+        To.Value == other.From.Value &&
+        To.IsIncluded != other.From.IsIncluded;
+
+    /// <summary>
+    /// Determines whether the current <see cref="BoundedInterval{T}"/> exactly follows <paramref name="other"/>.
+    /// </summary>
+    /// <param name="other">The other <see cref="BoundedInterval{T}"/> that might or might not be followed by the current <see cref="BoundedInterval{T}"/>.</param>
+    /// <returns><see langword="true"/> if the current <see cref="BoundedInterval{T}"/> exactly follows <paramref name="other"/>; otherwise <see langword="false"/>.</returns>
+    public bool Follows(BoundedInterval<T> other) =>
+        other.Precedes(this);
 
     private bool Contains(Bound<T> bound) =>
         bound >= From &&
