@@ -12,24 +12,37 @@ internal class Schedule
 {
 }
 
-internal class Activity
+internal record Activity
 {
-    public Activity(IReadOnlyDictionary<ResourceType, int> requiredResources, BoundedInterval<DateTime> timeSlot)
+    public Activity(int id, ActivityType type, IReadOnlyDictionary<ResourceType, int> requiredResources, BoundedInterval<DateTime> timeSlot)
     {
+        Id = id;
+        Type = type;
         TimeSlot = timeSlot;
         RequiredResources = requiredResources;
     }
 
+    public int Id { get; }
+    public ActivityType Type { get; }
     public BoundedInterval<DateTime> TimeSlot { get; }
     public IReadOnlyDictionary<ResourceType, int> RequiredResources { get; } // Lav en mere deklarativ type; ActivityRequirements e.l.
+    public bool CrossesDates =>
+        DateOnly.FromDateTime(TimeSlot.From.Value).DayNumber !=
+        DateOnly.FromDateTime(TimeSlot.To.Value).DayNumber;
 
     public override string ToString() => TimeSlot.ToString();
 }
 
+internal enum ActivityType
+{
+    A1,
+    A2
+}
+
 internal enum ResourceType
 {
-    T1,
-    T2
+    R1,
+    R2
 }
 
 internal record Resource
@@ -73,7 +86,7 @@ internal class ActivityConfiguration
 internal class ResourceActivityConfiguration
 {
     private readonly ActivityConfiguration _reservedTimeSlots;
-    private readonly ActivityConfiguration _prioritizedTimeSlots;
+    private readonly ActivityConfiguration _preferredTimeSlots;
 
     public ResourceActivityConfiguration(
         Resource resource,
@@ -82,17 +95,17 @@ internal class ResourceActivityConfiguration
     {
         Resource = resource;
         _reservedTimeSlots = reservedTimeSlots;
-        _prioritizedTimeSlots = prioritizedTimeSlots;
+        _preferredTimeSlots = prioritizedTimeSlots;
     }
 
     public Resource Resource { get; }
 
-    public bool IsAvailable(Activity activity) =>
+    public bool CanProcess(Activity activity) =>
         activity.RequiredResources.Keys.Contains(Resource.Type) &&
         !_reservedTimeSlots.Contains(activity);
 
-    public bool IsPrioritized(Activity activity) =>
-        _prioritizedTimeSlots.Contains(activity);
+    public bool Prefers(Activity activity) =>
+        _preferredTimeSlots.Contains(activity);
 
     public override string ToString() => Resource.ToString();
 }
@@ -103,7 +116,7 @@ public class Application
     {
         get
         {
-            var resource = new Resource(1, "Hans", ResourceType.T1);
+            var resource = new Resource(1, "Hans", ResourceType.R1);
 
             var preferredPredicates =
                 new Func<BoundedInterval<DateTime>, bool>[1]
@@ -129,7 +142,7 @@ public class Application
     {
         get
         {
-            var resource = new Resource(2, "Grethe", ResourceType.T2);
+            var resource = new Resource(2, "Grethe", ResourceType.R2);
 
             var dob = new DateOnly(2022, 1, 24);
 
@@ -157,7 +170,7 @@ public class Application
     {
         get
         {
-            var resource = new Resource(3, "Hr. Andersen", ResourceType.T2);
+            var resource = new Resource(3, "Hr. Andersen", ResourceType.R2);
 
             var reservedPredicates =
                 new Func<BoundedInterval<DateTime>, bool>[1]
@@ -213,14 +226,15 @@ public class Application
                         isWeekend
                             ? new Dictionary<ResourceType, int>
                                 {
-                                    { ResourceType.T1, 1 }
+                                    { ResourceType.R1, 1 }
                                 }
                             : new Dictionary<ResourceType, int>
                                 {
-                                    { ResourceType.T2, 1 }
+                                    { ResourceType.R2, 1 }
                                 };
+                    var type = isWeekend ? ActivityType.A1 : ActivityType.A2;
 
-                    return new Activity(requiredResources, interval);
+                    return new Activity(i, type, requiredResources, interval);
                 })
                 .ToArray();
 
@@ -236,14 +250,22 @@ public class Application
         // Behov for en type, der holder nedenstående data, samt information om, hvilke vagter de enkelte employees er blevet tildelt.
         var result =
             activities.ToDictionary(
-                s => s,
-                s => resources.Where(e => e.IsAvailable(s)).Select(e => (e, e.IsPrioritized(s))).ToArray());
+                activity => activity,
+                activity => resources.Where(e => e.CanProcess(activity)).Select(e => (e, e.Prefers(activity))).ToArray());
 
         // HARD CONTRAINTS:
         //  1) En resource må ikke påtage sig to aktiviteter lige efter hinanden.
         //  2) En resource må ikke påtage sig aktiviteter på sine reserverede timeslots.
-        //  3) En resource må ikke skal have fri et døgn efter endt aktivitet, hvis aktiviteten varer minimum 12 timer.
+        //  3) En resource må ikke skal have fri et døgn efter endt aktivitet, hvis aktivitetens D(start) < D(slut).
         //  4) Minimér antal aktiviteter uden resourcer.
+
+        var constraints =
+            new Func<ResourceAllocation, bool>[1]
+            {
+                ra => !ra.HasOverlappingActivities()
+            };
+
+        var constraintStore = new ConstraintStore(constraints);
 
         // SOFT CONSTRAINTS:
         //  1) Minimér antal overarbejdstimer i perioden.
@@ -251,5 +273,36 @@ public class Application
 
         // var scheduler = new Scheduler(algorithm);
         // var schedule = scheduler.Map(activities, resources);
+    }
+}
+
+internal record ResourceAllocation
+{
+    public ResourceAllocation(Resource resource, List<Activity> allocatedActivities)
+    {
+        Resource = resource;
+        AllocatedActivities = allocatedActivities;
+    }
+
+    public Resource Resource { get; }
+    public List<Activity> AllocatedActivities { get; }
+
+    public bool HasOverlappingActivities()
+    {
+        foreach (var activity in AllocatedActivities)
+            if (AllocatedActivities.Any(a => a.Id != activity.Id && a.TimeSlot.Overlaps(activity.TimeSlot)))
+                return true;
+
+        return false;
+    }
+}
+
+internal class ConstraintStore
+{
+    private readonly Func<ResourceAllocation, bool>[] _resourceAllocationConstraints;
+
+    public ConstraintStore(Func<ResourceAllocation, bool>[] resourceAllocationConstraints)
+    {
+        _resourceAllocationConstraints = resourceAllocationConstraints;
     }
 }
