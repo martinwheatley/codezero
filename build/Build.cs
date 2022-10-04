@@ -15,7 +15,7 @@ using static Nuke.Common.IO.PathConstruction;
 
 class Build : NukeBuild
 {
-    public static int Main () => Execute<Build>(x => x.Compile);
+    public static int Main () => Execute<Build>(x => x.Pack);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
@@ -29,15 +29,22 @@ class Build : NukeBuild
     public AbsolutePath ArtifactsDir => RootDirectory / "artifacts";
 
     private const string _author = "Martin Wheatley";
+    private const string _packageName = "Wheatley.Prelude";
+    private const string _projectName = "category-theory";
 
     Target Clean => _ => _
-        .Before(Restore)
         .Executes(() =>
         {
-            
+            DotNetTasks.DotNetClean(settings =>
+                settings
+                    .SetProject(Solution)
+                    .SetConfiguration(Configuration));
+
+            FileSystemTasks.EnsureCleanDirectory(ArtifactsDir);
         });
 
     Target Restore => _ => _
+        .DependsOn(Clean)
         .Executes(() =>
         {
             DotNetTasks.DotNetRestore(settings => settings
@@ -51,7 +58,7 @@ class Build : NukeBuild
             DotNetTasks.DotNetBuild(settings => settings
                 .SetNoRestore(true)
                 .SetAuthors(_author)
-                .SetPackageId("Wheatley.Prelude")
+                .SetPackageId(_packageName)
                 .SetTreatWarningsAsErrors(true)
                 .SetVersion(GitVersion.NuGetVersionV2)
                 .SetAssemblyVersion(GitVersion.MajorMinorPatch)
@@ -66,8 +73,11 @@ class Build : NukeBuild
         .Executes(() =>
         {
             DotNetTasks.DotNetPack(settings => settings
-                .SetProject(Solution.GetProject("category-theory"))
+                .SetProject(Solution.GetProject(_projectName))
                 .SetConfiguration(Configuration)
+                .SetPackageId(_packageName)
+                .SetVersion(GitVersion.NuGetVersionV2)
+                .SetAuthors(_author)
                 .SetNoBuild(true)
                 .SetNoRestore(true)
                 .SetOutputDirectory(ArtifactsDir));
@@ -82,8 +92,5 @@ class Build : NukeBuild
                 .SetNoRestore(true)
                 .SetProjectFile(Solution)
                 .SetConfiguration(Configuration));
-            ;
-            // DotNetTasks.DotNetTest(settings =>
-            //     settings.SetProject)
         });
 }
