@@ -3,16 +3,16 @@ branches:
   main:
     regex: main
     tag: ''
-    increment: Minor
+    increment: Patch
     prevent-increment-of-merged-branch-version: true
     track-merge-target: false
-    source-branches: [ 'dev' ]
+    source-branches: [ 'develop' ]
     is-mainline: true
     pre-release-weight: 55000
   develop:
     regex: dev
     tag: prerelease
-    increment: Patch
+    increment: Minor
     prevent-increment-of-merged-branch-version: false
     track-merge-target: true
     source-branches: []
