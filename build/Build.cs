@@ -79,6 +79,8 @@ class Build : NukeBuild
                 .SetAuthors(_author)
                 .SetNoBuild(true)
                 .SetNoRestore(true)
+                .SetIncludeSymbols(true)
+                .SetSymbolPackageFormat(DotNetSymbolPackageFormat.snupkg)
                 .SetOutputDirectory(ArtifactsDir));
         });
 
