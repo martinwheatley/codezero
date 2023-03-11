@@ -37,7 +37,7 @@ public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
     }
 
     /// <summary>
-    /// Determines whether the <see cref="BoundedInterval{T}"/> contains no elements; <see cref="From"/>.Value == <see cref="To"/>.Value, furthermore neither <see cref="From"/> or <see cref="To"/> is included.
+    /// Determines whether the <see cref="BoundedInterval{T}"/> contains no elements; <see cref="From"/>.Value == <see cref="To"/>.Value, furthermore neither <see cref="From"/> or <see cref="To"/> are included.
     /// </summary>
     public bool IsEmpty =>
         From.Value.Equals(To.Value) &&
@@ -112,8 +112,8 @@ public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
     /// </summary>
     /// <param name="other">The other <see cref="BoundedInterval{T}"/> that might or might not be adjacent on the current <see cref="BoundedInterval{T}"/>.</param>
     /// <returns><see langword="true"/> if <paramref name="other"/> is adjacent on the current <see cref="BoundedInterval{T}"/>; otherwise <see langword="false"/>.</returns>
-    public bool IsAdjacentOn(BoundedInterval<T> other) => 
-        other.Precedes(this) || 
+    public bool IsAdjacentOn(BoundedInterval<T> other) =>
+        other.Precedes(this) ||
         other.Follows(this);
 
     /// <summary>
@@ -165,7 +165,8 @@ public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
         return true;
     }
 
-    public bool TryPartition(T value, out BoundedInterval<T>[] result)
+    //TODO: Needs to be tested before it's shipped with the public API.
+    internal bool TryPartition(T value, out BoundedInterval<T>[] result)
     {
         result = Array.Empty<BoundedInterval<T>>();
 
