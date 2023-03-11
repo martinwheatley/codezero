@@ -44,7 +44,7 @@ public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
         !(To.IsIncluded && From.IsIncluded);
 
     /// <summary>
-    /// Determines whether the <see cref="BoundedInterval{T}"/> contains exactly one element; i.e. <see cref="From"/> == <see cref="To"/>.
+    /// Determines whether the <see cref="BoundedInterval{T}"/> contains exactly one element; i.e. <see cref="From"/>.Value == <see cref="To"/>.Value.
     /// </summary>
     public bool IsSingeton =>
         From.Value.Equals(To.Value) &&
@@ -216,12 +216,11 @@ public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
     {
         var leftBracket = From.IsIncluded ? "[" : "(";
         var rightBracket = To.IsIncluded ? "]" : ")";
-        var singletonValue = IsSingeton && From.IsIncluded ? From.Value : To.Value;
-
+        
         return IsEmpty
             ? $"ø"
             : IsSingeton
-                ? $"{{{singletonValue}}}"
+                ? $"{{{From}}}"
                 : $"{leftBracket}{From.Value}..{To.Value}{rightBracket}";
     }
 
