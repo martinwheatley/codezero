@@ -25,14 +25,6 @@ jobs:
       - name: create nuget package
         run: bash build.sh --configuration release
         shell: bash
-      - name: determine version
-        id: git_version
-        uses: gittools/actions/gitversion/execute@v0.9.7
-      - name: add git tag
-        uses: cardinalby/git-tag-action@v1.0
-        env:
-          TAG: $ {{ steps.git_version.outputs.nuGetVersionV2 }}
-          GITHUB_TOKEN:  ${{ secrets.GITHUB_TOKEN }}
       - name: upload artifacts
         uses: actions/upload-artifact@v3
         with:
