@@ -1,9 +1,10 @@
 ﻿using System.Collections;
+using System.Numerics;
 
-namespace category_theory;
+namespace CodeZero.Core;
 
 internal sealed class OrderedCollection<T> : IReadOnlySet<T>
-    where T : struct, IComparable<T>, IEquatable<T>, IComparisonOperators<T, T>, IEqualityOperators<T, T>
+    where T : struct, IComparable<T>, IEquatable<T>, IComparisonOperators<T, T, bool>, IEqualityOperators<T, T, bool>
 {
     private readonly Func<T, T> _nextValueGenerator;
     private readonly Lazy<IReadOnlyList<T>> _values;

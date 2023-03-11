@@ -1,14 +1,9 @@
-﻿using category_theory;
+﻿using CodeZero.Core;
 
 using Shouldly;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace category_theory_tests;
+
 public class BoundTests
 {
     [Fact]

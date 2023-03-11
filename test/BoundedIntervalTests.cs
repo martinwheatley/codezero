@@ -1,4 +1,4 @@
-﻿using category_theory;
+﻿using CodeZero.Core;
 
 using Shouldly;
 
@@ -54,14 +54,8 @@ public class BoundedIntervalTests
     {
         var lower = Bound<decimal>.Inclusive(2.03m);
         var upper = Bound<decimal>.Exclusive(2.03m);
-
-        var interval = new BoundedInterval<decimal>(lower, upper);
-
-        interval.IsEmpty.ShouldBeTrue();
-        interval.IsDefault.ShouldBeFalse();
-        interval.IsSingeton.ShouldBeFalse();
-        interval.From.ShouldBe(lower);
-        interval.To.ShouldBe(upper);
+        
+        Should.Throw<ArgumentException>(() => new BoundedInterval<decimal>(lower, upper));
     }
 
     [Fact]
@@ -70,13 +64,7 @@ public class BoundedIntervalTests
         var lower = Bound<decimal>.Exclusive(2.03m);
         var upper = Bound<decimal>.Inclusive(2.03m);
 
-        var interval = new BoundedInterval<decimal>(lower, upper);
-
-        interval.IsEmpty.ShouldBeTrue();
-        interval.IsDefault.ShouldBeFalse();
-        interval.IsSingeton.ShouldBeFalse();
-        interval.From.ShouldBe(lower);
-        interval.To.ShouldBe(upper);
+        Should.Throw<ArgumentException>(() => new BoundedInterval<decimal>(lower, upper));
     }
 
     [Fact]
@@ -99,7 +87,6 @@ public class BoundedIntervalTests
     {
         var from = new DateOnly(2020, 1, 1);
         var to = new DateOnly(2022, 1, 1);
-
         var interval = new BoundedInterval<DateOnly>(from, to);
 
         interval.To.Value.ShouldBe(to);

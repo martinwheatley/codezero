@@ -1,9 +1,9 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace category_theory;
+namespace CodeZero.Core;
 
-public readonly struct Bound<T> : IEquatable<Bound<T>>, IComparable<Bound<T>>, IComparisonOperators<Bound<T>, Bound<T>>, IEqualityOperators<Bound<T>, Bound<T>>
-    where T : struct, IComparable<T>, IEquatable<T>, IComparisonOperators<T, T>, IEqualityOperators<T, T>
+public readonly struct Bound<T> : IEquatable<Bound<T>>, IComparable<Bound<T>>
+    where T : struct, IComparable<T>, IEquatable<T>
 {
     public Bound(T value, bool isIncluded)
     {
@@ -35,7 +35,7 @@ public readonly struct Bound<T> : IEquatable<Bound<T>>, IComparable<Bound<T>>, I
             : -1;
 
     public bool Equals(Bound<T> other) =>
-        Value == other.Value &&
+        Value.Equals(other.Value) &&
         IsIncluded == other.IsIncluded;
 
     public override bool Equals([NotNullWhen(true)] object? obj) =>

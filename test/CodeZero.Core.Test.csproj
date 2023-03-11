@@ -1,13 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net6.0</TargetFramework>
-		<RootNamespace>category_theory_tests</RootNamespace>
+		<TargetFramework>net7.0</TargetFramework>
+		<RootNamespace>CodeZero.Core.Test</RootNamespace>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<EnablePreviewFeatures>true</EnablePreviewFeatures>
-		<LangVersion>preview</LangVersion>
-
 		<IsPackable>false</IsPackable>
 	</PropertyGroup>
 
@@ -26,7 +23,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\src\category-theory.csproj" />
+		<ProjectReference Include="..\src\CodeZero.Core.csproj" />
 	</ItemGroup>
 
 </Project>

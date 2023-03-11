@@ -29,8 +29,7 @@ class Build : NukeBuild
     public AbsolutePath ArtifactsDir => RootDirectory / "artifacts";
 
     private const string _author = "Martin Wheatley";
-    private const string _packageName = "Wheatley.Prelude";
-    private const string _projectName = "category-theory";
+    private const string _projectName = "CodeZero.Core";
 
     Target Clean => _ => _
         .Executes(() =>
@@ -58,7 +57,7 @@ class Build : NukeBuild
             DotNetTasks.DotNetBuild(settings => settings
                 .SetNoRestore(true)
                 .SetAuthors(_author)
-                .SetPackageId(_packageName)
+                .SetPackageId(_projectName)
                 .SetTreatWarningsAsErrors(true)
                 .SetVersion(GitVersion.NuGetVersionV2)
                 .SetAssemblyVersion(GitVersion.MajorMinorPatch)
@@ -75,7 +74,7 @@ class Build : NukeBuild
             DotNetTasks.DotNetPack(settings => settings
                 .SetProject(Solution.GetProject(_projectName))
                 .SetConfiguration(Configuration)
-                .SetPackageId(_packageName)
+                .SetPackageId(_projectName)
                 .SetVersion(GitVersion.NuGetVersionV2)
                 .SetAuthors(_author)
                 .SetNoBuild(true)

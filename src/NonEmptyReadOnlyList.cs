@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 
-namespace category_theory;
+namespace CodeZero.Core;
 
 internal sealed class NonEmptyReadOnlyList<T> : IReadOnlyList<T>
 {
@@ -13,6 +13,7 @@ internal sealed class NonEmptyReadOnlyList<T> : IReadOnlyList<T>
 
     public NonEmptyReadOnlyList(IReadOnlyList<T> values)
     {
+        if (values is [])
         if (values is null || values.Count is 0 || values[0] is null)
             throw new Exception("");
 

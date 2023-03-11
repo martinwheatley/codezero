@@ -1,4 +1,6 @@
-﻿namespace category_theory;
+﻿using System.Numerics;
+
+namespace CodeZero.Core;
 
 public struct NonZero<T>
     where T : struct, INumber<T>

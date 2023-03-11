@@ -1,13 +1,11 @@
-﻿using System;
-
-namespace category_theory;
+﻿namespace CodeZero.Core;
 
 /// <summary>
 /// Represents a proper bounded interval of type <typeparamref name="T"/>, where <typeparamref name="T"/> follows total order.
 /// </summary>
 /// <typeparam name="T">The type of elements in the interval.</typeparam>
 public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
-    where T : struct, IComparable<T>, IEquatable<T>, IComparisonOperators<T, T>, IEqualityOperators<T, T>, IParseable<T>
+    where T : struct, IComparable<T>, IEquatable<T>, IParsable<T>
 {
     /// <summary>
     /// Initializes a <see cref="BoundedInterval{T}"/> with endpoints <paramref name="from"/> and <paramref name="to"/>.
@@ -17,8 +15,11 @@ public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
     /// <exception cref="ArgumentException"></exception>
     public BoundedInterval(Bound<T> from, Bound<T> to)
     {
-        if (to.Value < from.Value)
-            throw new ArgumentException($"Invalid interval: {nameof(to)} ({to}) must be greater than or equal to {nameof(from)} ({from}).", nameof(to));
+        if (to.Value.Equals(from.Value) && to.IsIncluded != from.IsIncluded)
+            throw new ArgumentException($"Invalid {nameof(BoundedInterval<T>)}: {nameof(to)}.Value and {nameof(from)}.Value must not be equal, when {nameof(to)}.IsIncluded and {nameof(from)}.IsIncluded are unequal.");
+
+        if (to.IsLessThan(from))
+            throw new ArgumentException($"Invalid interval: the value of '{nameof(to)}' ({to}) must be greater than or equal to the value of '{nameof(from)}' ({from}).");
 
         From = from;
         To = to;
@@ -75,10 +76,10 @@ public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
         return
             (From.IsIncluded, To.IsIncluded) switch
             {
-                (true, true) => From.Value <= item && item <= To.Value,
-                (true, false) => From.Value <= item && item < To.Value,
-                (false, true) => From.Value < item && item <= To.Value,
-                (false, false) => From.Value < item && item < To.Value
+                (true, true) => From.Value.IsLessThanOrEqualTo(item) && item.IsLessThanOrEqualTo(To.Value),
+                (true, false) => From.Value.IsLessThanOrEqualTo(item) && item.IsLessThan(To.Value),
+                (false, true) => From.Value.IsLessThan(item) && item.IsLessThanOrEqualTo(To.Value),
+                (false, false) => From.Value.IsLessThan(item) && item.IsLessThan(To.Value)
             };
     }
 
@@ -121,7 +122,7 @@ public readonly struct BoundedInterval<T> : IEquatable<BoundedInterval<T>>
     /// <param name="other">The other <see cref="BoundedInterval{T}"/> that might or might not be preceded by the current <see cref="BoundedInterval{T}"/>.</param>
     /// <returns><see langword="true"/> if the current <see cref="BoundedInterval{T}"/> exactly precedes <paramref name="other"/>; otherwise <see langword="false"/>.</returns>
     public bool Precedes(BoundedInterval<T> other) =>
-        To.Value == other.From.Value &&
+        To.Value.Equals(other.From.Value) &&
         To.IsIncluded != other.From.IsIncluded;
 
     /// <summary>
