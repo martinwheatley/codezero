@@ -1,12 +1,13 @@
 name: on-pull-request
 on:
   pull_request:
+    types: [ opened, closed ]
     branches:
       - main
       - dev
 
 jobs:
-  build-artifacts:
+  build-package:
     name: Build and Pack Library
     runs-on: ubuntu-latest
     steps:
@@ -25,5 +26,16 @@ jobs:
       - name: create nuget package
         run: bash build.sh --configuration release
         shell: bash
+      - name: upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          path: ./artifacts/
+          name: artifacts
+  push-nuget-packages:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: download artifacts
+        uses: actions/download-artifact@v3
       - name: push nuget package
         run: nuget push artifacts/* -Source https://api.nuget.org/v3/index.json -apikey ${{ secrets.NUGET_API_KEY }}
